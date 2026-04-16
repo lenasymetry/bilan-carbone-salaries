@@ -201,8 +201,8 @@ st.markdown(
         }
 
         [data-testid="stExpander"] {
-            border: 1px solid var(--line);
-            border-left-width: 7px;
+            border: 1px solid #dbe4f0;
+            border-left: 5px solid #bfdbfe;
             border-radius: 14px;
             background: rgba(255, 255, 255, 0.92);
             margin-bottom: 1rem;
@@ -210,9 +210,6 @@ st.markdown(
         }
 
         .sec-contact,.sec-trajets,.sec-alimentation { display: none; }
-        div:has(.sec-contact) + div [data-testid="stExpander"] { border-left-color: var(--s1); }
-        div:has(.sec-trajets) + div [data-testid="stExpander"] { border-left-color: var(--s2); }
-        div:has(.sec-alimentation) + div [data-testid="stExpander"] { border-left-color: var(--s1); }
 
         .page-title {
             font-family: 'Poppins', sans-serif;
@@ -283,7 +280,8 @@ st.markdown(
             box-shadow: 0 16px 34px rgba(15, 23, 42, 0.09);
             padding: 2rem 1.8rem;
             max-width: 620px;
-            margin: 1rem;
+            margin: 0 auto;
+            width: 100%;
         }
 
         .thanks-leaf {
