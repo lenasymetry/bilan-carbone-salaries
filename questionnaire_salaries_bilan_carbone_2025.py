@@ -40,11 +40,8 @@ def save_salarie_response(reponses: dict) -> tuple[bool, str]:
 
             client = create_client(supabase_url, str(st.secrets[supabase_key_name]))
             payload = {
-                "nom": reponses.get("nom", ""),
-                "prenom": reponses.get("prenom", ""),
                 "poste": reponses.get("poste", ""),
                 "ville": reponses.get("ville", ""),
-                "email": reponses.get("email", ""),
                 "jours_teletravail": reponses.get("jours_teletravail", 0),
                 "distance_ar_km": reponses.get("distance_ar_km", 0),
                 "transport_bus_tram": reponses.get("transport_bus_tram", 0),
@@ -62,12 +59,12 @@ def save_salarie_response(reponses: dict) -> tuple[bool, str]:
                 client.table("questionnaire_salaries_reponses").insert(payload).execute()
                 return True, "Questionnaire salarie enregistre dans Supabase avec succes."
             except Exception:
-                # Compatibilite avec les schemas qui n'ont pas encore la colonne "ville".
+                # Compatibilite avec les schemas historiques (nom/prenom requis, sans ville).
                 legacy_payload = {
-                    "nom": reponses.get("nom", ""),
-                    "prenom": reponses.get("prenom", ""),
+                    "nom": "",
+                    "prenom": "",
                     "poste": reponses.get("poste", ""),
-                    "email": reponses.get("email", ""),
+                    "email": "",
                     "jours_teletravail": reponses.get("jours_teletravail", 0),
                     "distance_ar_km": reponses.get("distance_ar_km", 0),
                     "transport_bus_tram": reponses.get("transport_bus_tram", 0),
@@ -455,11 +452,8 @@ if st.button("🚀 Envoyer le questionnaire"):
         st.error("Veuillez corriger les champs suivants :\n\n" + "\n".join(erreurs))
     else:
         reponses = {
-            "nom": "",
-            "prenom": "",
             "poste": poste,
             "ville": ville,
-            "email": "",
             "jours_teletravail": jours_teletravail,
             "transport_bus_tram": transport_bus_tram,
             "transport_velo": transport_velo,
