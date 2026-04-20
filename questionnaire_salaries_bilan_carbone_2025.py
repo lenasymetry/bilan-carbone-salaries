@@ -43,6 +43,7 @@ def save_salarie_response(reponses: dict) -> tuple[bool, str]:
                 "nom": reponses.get("nom", ""),
                 "prenom": reponses.get("prenom", ""),
                 "poste": reponses.get("poste", ""),
+                "ville": reponses.get("ville", ""),
                 "email": reponses.get("email", ""),
                 "jours_teletravail": reponses.get("jours_teletravail", 0),
                 "distance_ar_km": reponses.get("distance_ar_km", 0),
@@ -61,12 +62,37 @@ def save_salarie_response(reponses: dict) -> tuple[bool, str]:
                 client.table("questionnaire_salaries_reponses").insert(payload).execute()
                 return True, "Questionnaire salarie enregistre dans Supabase avec succes."
             except Exception:
-                minimal_payload = {"reponses": reponses}
-                client.table("questionnaire_salaries_reponses").insert(minimal_payload).execute()
-                return True, (
-                    "Questionnaire salarie enregistre dans Supabase "
-                    "(mode compatibilite schema minimal)."
-                )
+                # Compatibilite avec les schemas qui n'ont pas encore la colonne "ville".
+                legacy_payload = {
+                    "nom": reponses.get("nom", ""),
+                    "prenom": reponses.get("prenom", ""),
+                    "poste": reponses.get("poste", ""),
+                    "email": reponses.get("email", ""),
+                    "jours_teletravail": reponses.get("jours_teletravail", 0),
+                    "distance_ar_km": reponses.get("distance_ar_km", 0),
+                    "transport_bus_tram": reponses.get("transport_bus_tram", 0),
+                    "transport_velo": reponses.get("transport_velo", 0),
+                    "transport_marche": reponses.get("transport_marche", 0),
+                    "transport_voiture": reponses.get("transport_voiture", 0),
+                    "type_voiture": reponses.get("type_voiture", None),
+                    "repas_vegetariens": reponses.get("repas_vegetariens", 0),
+                    "repas_viande_rouge": reponses.get("repas_viande_rouge", 0),
+                    "repas_viande_blanche_poisson": reponses.get("repas_viande_blanche_poisson", 0),
+                    "reponses": reponses,
+                }
+                try:
+                    client.table("questionnaire_salaries_reponses").insert(legacy_payload).execute()
+                    return True, (
+                        "Questionnaire salarie enregistre dans Supabase "
+                        "(mode compatibilite schema historique)."
+                    )
+                except Exception:
+                    minimal_payload = {"reponses": reponses}
+                    client.table("questionnaire_salaries_reponses").insert(minimal_payload).execute()
+                    return True, (
+                        "Questionnaire salarie enregistre dans Supabase "
+                        "(mode compatibilite schema minimal)."
+                    )
     except Exception as exc:  # noqa: BLE001
         errors.append(f"Supabase indisponible pour le moment : {exc}")
 
@@ -82,6 +108,7 @@ def save_salarie_response(reponses: dict) -> tuple[bool, str]:
                     nom TEXT NOT NULL,
                     prenom TEXT NOT NULL,
                     poste TEXT,
+                    ville TEXT,
                     email TEXT NOT NULL,
                     jours_teletravail REAL NOT NULL,
                     distance_ar_km REAL NOT NULL,
@@ -97,12 +124,19 @@ def save_salarie_response(reponses: dict) -> tuple[bool, str]:
                 """
             )
 
+            existing_columns = {
+                row[1] for row in cur.execute("PRAGMA table_info(questionnaire_salaries_reponses)").fetchall()
+            }
+            if "ville" not in existing_columns:
+                cur.execute("ALTER TABLE questionnaire_salaries_reponses ADD COLUMN ville TEXT")
+
             cur.execute(
                 """
                 INSERT INTO questionnaire_salaries_reponses (
                     nom,
                     prenom,
                     poste,
+                    ville,
                     email,
                     jours_teletravail,
                     distance_ar_km,
@@ -115,12 +149,13 @@ def save_salarie_response(reponses: dict) -> tuple[bool, str]:
                     repas_viande_blanche_poisson,
                     reponses
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     reponses.get("nom", ""),
                     reponses.get("prenom", ""),
                     reponses.get("poste", ""),
+                    reponses.get("ville", ""),
                     reponses.get("email", ""),
                     reponses.get("jours_teletravail", 0),
                     reponses.get("distance_ar_km", 0),
@@ -357,11 +392,9 @@ st.markdown(
 )
 
 st.markdown('<div class="sec-contact"></div>', unsafe_allow_html=True)
-with st.expander("Coordonnées du contact", expanded=True):
-    nom = st.text_input("Nom :*")
-    prenom = st.text_input("Prénom :*")
+with st.expander("Informations du salarié", expanded=True):
     poste = st.text_input("Poste :")
-    email = st.text_input("Adresse e-mail :*")
+    ville = st.text_input("Site (ville) :")
 
 st.markdown('<div class="sec-trajets"></div>', unsafe_allow_html=True)
 with st.expander("Trajets domicile-travail", expanded=True):
@@ -414,15 +447,6 @@ st.markdown("---")
 if st.button("🚀 Envoyer le questionnaire"):
     erreurs = []
 
-    if not nom.strip():
-        erreurs.append("- Nom")
-    if not prenom.strip():
-        erreurs.append("- Prénom")
-    if not email.strip():
-        erreurs.append("- Adresse e-mail")
-    elif "@" not in email or "." not in email.split("@")[-1]:
-        erreurs.append("- Adresse e-mail (format invalide)")
-
     total_transport = transport_bus_tram + transport_velo + transport_marche + transport_voiture
     if total_transport <= 0:
         erreurs.append("- Indiquer au moins une fréquence de mode de transport")
@@ -431,10 +455,11 @@ if st.button("🚀 Envoyer le questionnaire"):
         st.error("Veuillez corriger les champs suivants :\n\n" + "\n".join(erreurs))
     else:
         reponses = {
-            "nom": nom,
-            "prenom": prenom,
+            "nom": "",
+            "prenom": "",
             "poste": poste,
-            "email": email,
+            "ville": ville,
+            "email": "",
             "jours_teletravail": jours_teletravail,
             "transport_bus_tram": transport_bus_tram,
             "transport_velo": transport_velo,
