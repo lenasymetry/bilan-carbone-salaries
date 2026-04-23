@@ -391,7 +391,11 @@ st.markdown(
 st.markdown('<div class="sec-contact"></div>', unsafe_allow_html=True)
 with st.expander("Informations du salarié", expanded=True):
     poste = st.text_input("Poste :")
-    ville = st.text_input("Site (ville) :")
+    ville = st.selectbox(
+        "Ville :*",
+        ["", "Bordeaux", "Chatou", "Lille", "Massy", "Nice", "Toulouse"],
+        format_func=lambda x: "Sélectionnez une ville" if x == "" else x,
+    )
 
 st.markdown('<div class="sec-trajets"></div>', unsafe_allow_html=True)
 with st.expander("Trajets domicile-travail", expanded=True):
@@ -443,6 +447,9 @@ with st.expander("Alimentation", expanded=True):
 st.markdown("---")
 if st.button("🚀 Envoyer le questionnaire"):
     erreurs = []
+
+    if not ville:
+        erreurs.append("- Ville")
 
     total_transport = transport_bus_tram + transport_velo + transport_marche + transport_voiture
     if total_transport <= 0:
