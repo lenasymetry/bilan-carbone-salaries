@@ -480,3 +480,4 @@ if st.button("🚀 Envoyer le questionnaire"):
         else:
             st.error("Le questionnaire est valide, mais l'enregistrement principal a échoué.")
             st.warning(db_message)
+ 
