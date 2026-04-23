@@ -451,10 +451,6 @@ if st.button("🚀 Envoyer le questionnaire"):
     if not ville:
         erreurs.append("- Ville")
 
-    total_transport = transport_bus_tram + transport_velo + transport_marche + transport_voiture
-    if total_transport <= 0:
-        erreurs.append("- Indiquer au moins une fréquence de mode de transport")
-
     if erreurs:
         st.error("Veuillez corriger les champs suivants :\n\n" + "\n".join(erreurs))
     else:
@@ -480,4 +476,3 @@ if st.button("🚀 Envoyer le questionnaire"):
         else:
             st.error("Le questionnaire est valide, mais l'enregistrement principal a échoué.")
             st.warning(db_message)
- 
